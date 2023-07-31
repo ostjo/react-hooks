@@ -4,32 +4,10 @@
 import * as React from 'react'
 import {useLocalStorageState} from '../utils'
 
-function Board() {
-  const emptyBoard = Array(9).fill(null)
-  const [squares, setSquares] = useLocalStorageState('squares', emptyBoard)
-
-  const nextValue = calculateNextValue(squares)
-  const winner = calculateWinner(squares)
-  const status = calculateStatus(winner, squares, nextValue)
-
-  function selectSquare(square) {
-    if (squares[square] != null || winner != null) return
-    // 🦉 It's typically a bad idea to mutate or directly change state in React.
-    // Doing so can lead to subtle bugs that can easily slip into production.
-    const squaresCopy = [...squares]
-    // 🐨 set the value of the square that was selected
-    squaresCopy[square] = nextValue
-
-    setSquares(squaresCopy)
-  }
-
-  function restart() {
-    setSquares(emptyBoard)
-  }
-
+function Board({squares, onClick}) {
   function renderSquare(i) {
     return (
-      <button className="square" onClick={() => selectSquare(i)}>
+      <button className="square" onClick={() => onClick(i)}>
         {squares[i]}
       </button>
     )
@@ -37,7 +15,6 @@ function Board() {
 
   return (
     <div>
-      <div className="status">{status}</div>
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -53,21 +30,79 @@ function Board() {
         {renderSquare(7)}
         {renderSquare(8)}
       </div>
-      <button className="restart" onClick={restart}>
-        restart
-      </button>
     </div>
   )
 }
 
 function Game() {
+  const emptyBoard = Array(9).fill(null)
+  const [currentStep, setCurrentStep] = useLocalStorageState('step', 0)
+  const [moves, setMoves] = useLocalStorageState('moves', [emptyBoard])
+
+  const nextValue = calculateNextValue(moves[currentStep])
+  const winner = calculateWinner(moves[currentStep])
+  const status = calculateStatus(winner, moves[currentStep], nextValue)
+
+  function selectSquare(square) {
+    if (moves[currentStep][square] != null || winner != null) return
+    // 🦉 It's typically a bad idea to mutate or directly change state in React.
+    // Doing so can lead to subtle bugs that can easily slip into production.
+    const squaresCopy = [...moves[currentStep]]
+    const movesCopy = moves.slice(0, currentStep + 1)
+    // 🐨 set the value of the square that was selected
+    squaresCopy[square] = nextValue
+
+    setCurrentStep(step => step + 1)
+    setMoves([...movesCopy, squaresCopy])
+  }
+
+  function restart() {
+    setCurrentStep(0)
+    setMoves([emptyBoard])
+  }
+
   return (
     <div className="game">
       <div className="game-board">
-        <Board />
+        <Board onClick={selectSquare} squares={moves[currentStep]} />
+        <button className="restart" onClick={restart}>
+          restart
+        </button>
+      </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <Moves
+          moves={moves}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
+        />
       </div>
     </div>
   )
+}
+
+function Moves({moves, currentStep, setCurrentStep}) {
+  function selectMove(move) {
+    setCurrentStep(move)
+  }
+
+  function renderButton(move, index) {
+    const firstMove = index === 0
+
+    return (
+      <li key={move + index}>
+        <button
+          disabled={firstMove && index === currentStep}
+          onClick={() => selectMove(index)}
+        >
+          {firstMove ? `Go to game start` : `Go to move #${index}`}
+          {currentStep === index && ' (current)'}
+        </button>
+      </li>
+    )
+  }
+
+  return <ol>{moves.map((move, index) => renderButton(move, index))}</ol>
 }
 
 function calculateStatus(winner, squares, nextValue) {
