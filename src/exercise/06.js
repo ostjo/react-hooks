@@ -11,6 +11,7 @@ import {
 
 function PokemonInfo({pokemonName}) {
   const [pokemon, setPokemon] = React.useState(null)
+  const [error, setError] = React.useState(null)
 
   React.useEffect(() => {
     if (!pokemonName) return
@@ -18,12 +19,23 @@ function PokemonInfo({pokemonName}) {
     // 🐨 before calling `fetchPokemon`, clear the current pokemon state by setting it to null.
     // (This is to enable the loading state when switching between different pokemon.)
     setPokemon(null)
-    fetchPokemon(pokemonName).then(data => setPokemon(data))
+    setError(null)
+    fetchPokemon(pokemonName).then(
+      data => setPokemon(data),
+      error => setError(error),
+    )
   }, [pokemonName])
 
-  if (!pokemonName) {
+  if (error) {
+    return (
+      <div role="alert">
+        There was an error:{' '}
+        <pre style={{whiteSpace: 'normal'}}>{error.message}</pre>
+      </div>
+    )
+  } else if (!pokemonName) {
     return 'Submit a pokemon'
-  } else if (pokemonName && !pokemon) {
+  } else if (!pokemon) {
     return <PokemonInfoFallback name={pokemonName} />
   } else {
     return <PokemonDataView pokemon={pokemon} />
