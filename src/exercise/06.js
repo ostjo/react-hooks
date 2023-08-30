@@ -86,7 +86,8 @@ function App() {
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
       <div className="pokemon-info">
-        <ErrorBoundary fallback={ErrorFallback}>
+        {/* we set the key to pokemonName to force the ErrorBoundary to rerender and reset its error state to null */}
+        <ErrorBoundary key={pokemonName} fallback={ErrorFallback}>
           <PokemonInfo pokemonName={pokemonName} />
         </ErrorBoundary>
       </div>
